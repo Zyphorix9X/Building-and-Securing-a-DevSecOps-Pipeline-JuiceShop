@@ -1,0 +1,96 @@
+# App
+node_modules/
+*.sqlite
+order_*.pdf
+app/
+!frontend/src/app
+uploads/complaints/*.*
+!uploads/complaints/.gitkeep
+ftp/legal.md
+package-lock.json
+i18n/*.json
+i18n/*.invalid
+!frontend/src/assets/i18n/*.json
+!data/static/i18n/*.json
+/data/juiceshop.sqlite-journal
+frontend/node_modules/
+npm-debug.log*
+
+# Build
+.nyc_output/
+.sass-cache/
+build/
+cache/
+coverage/
+dist/
+logs/
+vagrant/.vagrant/
+*.orig
+*.out
+*.log
+JSON
+JSON.map
+frontend/src/**/*.js
+/bom.json
+/bom.xml
+
+# IDEs
+.idea/
+.vscode/
+out/
+*.eml
+*.iml
+*.iws
+*.swp
+.ai/mcp/mcp.json
+.junie/memory/
+.junie/plans/
+
+# Branch ghpages
+assets/
+!frontend/src/assets/
+
+# Custom configuration files
+config/*.yml
+!config/addo.yml
+!config/bodgeit.yml
+!config/ctf.yml
+!config/fbctf.yml
+!config/default.yml
+!config/juicebox.yml
+!config/quiet.yml
+!config/test.yml
+!config/7ms.yml
+!config/mozilla.yml
+!config/unsafe.yml
+!config/tutorial.yml
+!config/oss.yml
+!config/defcon33.yml
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Misc
+.playwright-mcp/
+cypress/screenshots/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Sensitive files
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+secrets.*
+
+# Local databases
+*.sqlite
+*.sqlite3
+
+# Local testing evidence
+evidence/
