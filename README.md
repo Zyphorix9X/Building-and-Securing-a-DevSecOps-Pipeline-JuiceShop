@@ -1,3 +1,26 @@
+## IE3142 DevSecOps Project Setup
+
+This repository contains the secured OWASP Juice Shop application used for
+the IE3142 DevSecOps continuous assessment.
+
+### Prerequisites
+
+Install the following tools:
+
+- Node.js 24
+- npm
+- Docker Desktop
+- Docker Compose
+- Git
+
+### Running the application with Docker
+
+Clone the repository:
+
+```bash
+git clone https://github.com/alokafonseka/Building-and-Securing-a-DevSecOps-Pipeline-JuiceShop.git
+cd Building-and-Securing-a-DevSecOps-Pipeline-JuiceShop
+
 # ![Juice Shop Logo](https://raw.githubusercontent.com/juice-shop/juice-shop/master/frontend/src/assets/public/images/JuiceShop_Logo_100px.png) OWASP Juice Shop
 
 [![OWASP Flagship](https://img.shields.io/badge/owasp-flagship%20project-48A646.svg)](https://owasp.org/projects/#sec-flagships)

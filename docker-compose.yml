@@ -1,0 +1,14 @@
+
+services:
+  juice-shop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: ie3142-juice-shop:original
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    environment:
+      NODE_ENV: production
