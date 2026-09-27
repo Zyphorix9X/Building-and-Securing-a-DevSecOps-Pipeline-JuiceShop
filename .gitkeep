@@ -1,0 +1,11 @@
+New-Item evidence\member1\.gitkeep -ItemType File
+
+New-Item evidence\member2\search-sqli\before\.gitkeep -ItemType File
+New-Item evidence\member2\search-sqli\after\.gitkeep -ItemType File
+New-Item evidence\member2\search-sqli\code\.gitkeep -ItemType File
+
+New-Item evidence\member2\sast-comparison\before\.gitkeep -ItemType File
+New-Item evidence\member2\sast-comparison\after\.gitkeep -ItemType File
+
+New-Item evidence\member3\.gitkeep -ItemType File
+New-Item evidence\member4\.gitkeep -ItemType File
