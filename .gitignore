@@ -94,3 +94,5 @@ secrets.*
 
 # Local testing evidence
 evidence/
+*.png
+*.json
