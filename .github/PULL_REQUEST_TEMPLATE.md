@@ -24,7 +24,7 @@ provide the required disclosure, your PR will not be merged.
 
 A clear and concise summary of the change and which issue (if any) it fixes. Should also include relevant motivation and context.
 
-Resolved or fixed issue: Add GitHub issue number in format `#0000` or `none` 
+Resolved or fixed issue: 
 
 ### AI Tool Disclosure
 
