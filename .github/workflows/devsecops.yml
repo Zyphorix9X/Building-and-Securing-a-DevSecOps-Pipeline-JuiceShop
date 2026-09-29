@@ -1,0 +1,78 @@
+name: IE3142 DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - feature/cicd-security-automation
+      - 'demo/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and Security Regression Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build:server
+
+      - name: Run IE3142 security regression tests
+        run: node --import ./test/api/helpers/test-env.mjs --import tsx --test --test-force-exit test/api/ie3142-security.test.ts
+
+      - name: Semgrep SAST security scan
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            semgrep/semgrep semgrep scan \
+            --config /src/.semgrep/juice-shop.yml \
+            /src/routes/login.ts \
+            /src/routes/search.ts \
+            --error
+
+      - name: Backend dependency vulnerability scan
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > backend-audit.json || true
+          node -e "const a=require('./backend-audit.json'); const v=a.metadata.vulnerabilities; console.log('Backend audit:', v); if (v.high > 16 || v.critical > 7) { console.error('Dependency vulnerability baseline exceeded'); process.exit(1); }"
+
+      - name: Frontend dependency vulnerability scan
+        working-directory: ./frontend
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > frontend-audit.json || true
+          node -e "const a=require('./frontend-audit.json'); const v=a.metadata.vulnerabilities; console.log('Frontend audit:', v); if (v.high > 4 || v.critical > 0) { console.error('Dependency vulnerability baseline exceeded'); process.exit(1); }"
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t ie3142-juice-shop:${{ github.sha }} .
+
+      - name: Trivy container vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ie3142-juice-shop:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'HIGH,CRITICAL'
