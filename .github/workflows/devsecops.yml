@@ -66,6 +66,9 @@ jobs:
 
           echo "JWT signing key files are available."
 
+      # ---------------------------------------------------------
+      # Create CTF key required by Juice Shop during CI tests
+      # ---------------------------------------------------------
       - name: Create CI CTF key
         shell: bash
         run: |
@@ -79,12 +82,21 @@ jobs:
 
           echo "CTF key file is available for CI tests."
 
+      # ---------------------------------------------------------
+      # Install project dependencies
+      # ---------------------------------------------------------
       - name: Install dependencies
         run: npm install
 
+      # ---------------------------------------------------------
+      # Build backend
+      # ---------------------------------------------------------
       - name: Build backend
         run: npm run build:server
 
+      # ---------------------------------------------------------
+      # Security regression tests
+      # ---------------------------------------------------------
       - name: Run IE3142 security regression tests
         run: |
           node \
@@ -94,6 +106,9 @@ jobs:
             --test-force-exit \
             test/api/ie3142-security.test.ts
 
+      # ---------------------------------------------------------
+      # Gate 1 - Semgrep SAST
+      # ---------------------------------------------------------
       - name: Semgrep SAST security scan
         run: |
           docker run --rm \
@@ -104,22 +119,31 @@ jobs:
             /src/routes/search.ts \
             --error
 
+      # ---------------------------------------------------------
+      # Gate 2 - Backend dependency vulnerability scan
+      # ---------------------------------------------------------
       - name: Backend dependency vulnerability scan
         shell: bash
         run: |
           npm audit --omit=dev --json > backend-audit.json || true
 
           node -e "
-            const a=require('./backend-audit.json');
-            const v=a.metadata.vulnerabilities;
+            const a = require('./backend-audit.json');
+            const v = a.metadata.vulnerabilities;
+
             console.log('Backend audit:', v);
 
             if (v.high > 16 || v.critical > 7) {
               console.error('Dependency vulnerability baseline exceeded');
               process.exit(1);
             }
+
+            console.log('Backend dependency baseline accepted');
           "
 
+      # ---------------------------------------------------------
+      # Gate 2 - Frontend dependency vulnerability scan
+      # ---------------------------------------------------------
       - name: Frontend dependency vulnerability scan
         working-directory: ./frontend
         shell: bash
@@ -127,33 +151,93 @@ jobs:
           npm audit --omit=dev --json > frontend-audit.json || true
 
           node -e "
-            const a=require('./frontend-audit.json');
-            const v=a.metadata.vulnerabilities;
+            const a = require('./frontend-audit.json');
+            const v = a.metadata.vulnerabilities;
+
             console.log('Frontend audit:', v);
 
             if (v.high > 4 || v.critical > 0) {
               console.error('Dependency vulnerability baseline exceeded');
               process.exit(1);
             }
+
+            console.log('Frontend dependency baseline accepted');
           "
 
+      # ---------------------------------------------------------
+      # Gate 3 - Gitleaks secret scan
+      # ---------------------------------------------------------
       - name: Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ---------------------------------------------------------
+      # Build Docker image
+      # ---------------------------------------------------------
       - name: Build Docker image
         run: |
           docker build \
             -t ie3142-juice-shop:${{ github.sha }} \
             .
 
+      # ---------------------------------------------------------
+      # Gate 4 - Trivy container vulnerability scan
+      #
+      # Generate a JSON report first. Existing vulnerabilities in
+      # the intentionally vulnerable Juice Shop image are handled
+      # using the documented project baseline below.
+      # ---------------------------------------------------------
       - name: Trivy container vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'ie3142-juice-shop:${{ github.sha }}'
-          format: 'table'
-          exit-code: '1'
+          format: 'json'
+          output: 'trivy-results.json'
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
+
+      # ---------------------------------------------------------
+      # Enforce Trivy vulnerability baseline
+      #
+      # Current reviewed baseline:
+      # HIGH     = 42
+      # CRITICAL = 6
+      #
+      # Pipeline fails if HIGH or CRITICAL findings increase.
+      # ---------------------------------------------------------
+      - name: Enforce Trivy vulnerability baseline
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+
+            const report = JSON.parse(
+              fs.readFileSync('trivy-results.json', 'utf8')
+            );
+
+            const vulnerabilities = (report.Results || [])
+              .flatMap(result => result.Vulnerabilities || []);
+
+            const high = vulnerabilities.filter(
+              vulnerability => vulnerability.Severity === 'HIGH'
+            ).length;
+
+            const critical = vulnerabilities.filter(
+              vulnerability => vulnerability.Severity === 'CRITICAL'
+            ).length;
+
+            console.log('Trivy HIGH:', high);
+            console.log('Trivy CRITICAL:', critical);
+            console.log('Allowed HIGH baseline: 42');
+            console.log('Allowed CRITICAL baseline: 6');
+
+            if (high > 42 || critical > 6) {
+              console.error('Trivy vulnerability baseline exceeded');
+              process.exit(1);
+            }
+
+            console.log('Trivy vulnerability baseline accepted');
+          "
