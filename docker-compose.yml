@@ -12,3 +12,6 @@ services:
 
     environment:
       NODE_ENV: production
+
+    volumes:
+      - ./ctf.key:/juice-shop/ctf.key:ro
