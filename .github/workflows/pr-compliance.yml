@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   check-compliance:
+    # Apply the upstream Juice Shop contributor policy only in its own repository.
+    # pull_request_target uses the base branch workflow, so this guard must be on main.
+    if: github.repository == 'juice-shop/juice-shop'
     runs-on: ubuntu-latest
     steps:
       - name: "Initialize PR Information"
