@@ -22,3 +22,7 @@ frontend/.angular/
 secrets/
 .env
 .env.*
+
+#Infrastructure files are not required at runtime
+terraform/
+infrastructure/terraform/
