@@ -1,0 +1,13 @@
+rules:
+  - id: ie3142-unsafe-sql-interpolation
+    message: >
+      A SQL query contains template-string interpolation.
+      Review whether user input can change the SQL statement.
+    severity: ERROR
+    languages:
+      - typescript
+    pattern-regex: 'sequelize\.query\(\s*`[^`]*\$\{'
+    metadata:
+      category: security
+      cwe:
+        - "CWE-89"

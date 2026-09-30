@@ -15,8 +15,8 @@ import { type User } from '../data/types'
 import * as utils from '../lib/utils'
 
 // vuln-code-snippet start loginAdminChallenge loginBenderChallenge loginJimChallenge
-export function login() {
-  function afterLogin(user: User, res: Response, next: NextFunction) {
+export function login () {
+  function afterLogin (user: User, res: Response, next: NextFunction) {
     verifyPostLoginChallenges(user) // vuln-code-snippet hide-line
 
     BasketModel.findOrCreate({ where: { UserId: user.id } })
@@ -116,7 +116,7 @@ export function login() {
   }
   // vuln-code-snippet end loginAdminChallenge loginBenderChallenge loginJimChallenge
 
-  function verifyPreLoginChallenges(
+  function verifyPreLoginChallenges (
     req: Request
   ) {
     challengeUtils.solveIf(
@@ -220,7 +220,7 @@ export function login() {
     )
   }
 
-  function verifyPostLoginChallenges(
+  function verifyPostLoginChallenges (
     user: User
   ) {
     challengeUtils.solveIf(
