@@ -92,12 +92,11 @@ secrets.*
 *.sqlite
 *.sqlite3
 
-# Local testing evidence
-*.png
-!screenshots/**/*.png
 
 # local secrets
 secrets/
+*.key
+*.pem
 .env
 .env.*
 !.env.example

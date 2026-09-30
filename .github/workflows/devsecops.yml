@@ -20,14 +20,17 @@ jobs:
     name: Build and Security Regression Tests
     runs-on: ubuntu-latest
 
+    env:
+      CTF_KEY: ie3142-ci-test-ctf-key
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -62,6 +65,19 @@ jobs:
           test -s "$JWT_PUBLIC_KEY_FILE"
 
           echo "JWT signing key files are available."
+
+      - name: Create CI CTF key
+        shell: bash
+        run: |
+          printf '%s' "$CTF_KEY" > ctf.key
+          chmod 600 ctf.key
+
+          if [ ! -s ctf.key ]; then
+            echo "ERROR: ctf.key was not created."
+            exit 1
+          fi
+
+          echo "CTF key file is available for CI tests."
 
       - name: Install dependencies
         run: npm install
@@ -139,4 +155,5 @@ jobs:
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
+          vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
