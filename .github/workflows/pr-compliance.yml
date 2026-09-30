@@ -10,8 +10,7 @@ permissions:
 
 jobs:
   check-compliance:
-    # This contributor policy is specific to the upstream OWASP Juice Shop repository.
-    # Do not apply its organization-membership and spam checks to coursework forks.
+    # This policy applies only to the official OWASP Juice Shop repository.
     if: github.repository == 'juice-shop/juice-shop'
     runs-on: ubuntu-latest
     steps:
