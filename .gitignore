@@ -92,9 +92,6 @@ secrets.*
 *.sqlite
 *.sqlite3
 
-# Local testing evidence
-*.png
-!screenshots/**/*.png
 
 # local secrets
 secrets/
