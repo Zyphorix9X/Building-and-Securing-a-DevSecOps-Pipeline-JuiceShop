@@ -80,7 +80,7 @@ jobs:
           echo "CTF key file is available for CI tests."
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build backend
         run: npm run build:server
