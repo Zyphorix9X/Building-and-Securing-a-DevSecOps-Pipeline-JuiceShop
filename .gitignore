@@ -95,3 +95,14 @@ secrets.*
 # Local testing evidence
 *.png
 !screenshots/**/*.png
+
+# local secrets
+secrets/
+.env
+.env.*
+!.env.example
+
+# Security evidence and temporary files
+evidence/
+*.pem
+*.key
