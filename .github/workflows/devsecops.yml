@@ -20,6 +20,9 @@ jobs:
     name: Build and Security Regression Tests
     runs-on: ubuntu-latest
 
+    env:
+      CTF_KEY: ie3142-ci-test-ctf-key
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
