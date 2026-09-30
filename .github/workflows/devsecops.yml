@@ -66,6 +66,19 @@ jobs:
 
           echo "JWT signing key files are available."
 
+      - name: Create CI CTF key
+        shell: bash
+        run: |
+          printf '%s' 'ie3142-ci-test-ctf-key' > ctf.key
+          chmod 600 ctf.key
+
+          if [ ! -s ctf.key ]; then
+            echo "ERROR: ctf.key was not created."
+            exit 1
+          fi
+
+          echo "CTF key file is available for CI tests."
+
       - name: Install dependencies
         run: npm install
 
