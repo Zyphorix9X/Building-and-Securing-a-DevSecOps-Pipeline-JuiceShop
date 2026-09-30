@@ -95,6 +95,8 @@ secrets.*
 
 # local secrets
 secrets/
+*.key
+*.pem
 .env
 .env.*
 !.env.example
