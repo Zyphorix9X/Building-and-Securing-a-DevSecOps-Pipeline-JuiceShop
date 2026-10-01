@@ -1,0 +1,235 @@
+name: IE3142 DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - feature/cicd-security-automation
+      - feature/secrets-management
+      - 'demo/**'
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and Security Regression Tests
+    runs-on: ubuntu-latest
+
+    env:
+      CTF_KEY: ie3142-ci-test-ctf-key
+
+    steps:
+      # ---------------------------------------------------------
+      # 1. Checkout source code
+      # ---------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # ---------------------------------------------------------
+      # 2. Configure Node.js
+      # ---------------------------------------------------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # ---------------------------------------------------------
+      # 3. Provision JWT signing keys from GitHub Actions Secrets
+      # ---------------------------------------------------------
+      - name: Provision JWT signing keys
+        shell: bash
+        env:
+          JWT_PRIVATE_KEY_PEM: ${{ secrets.JWT_PRIVATE_KEY_PEM }}
+          JWT_PUBLIC_KEY_PEM: ${{ secrets.JWT_PUBLIC_KEY_PEM }}
+        run: |
+          test -n "$JWT_PRIVATE_KEY_PEM"
+          test -n "$JWT_PUBLIC_KEY_PEM"
+
+          umask 077
+          mkdir -p secrets
+
+          printf '%s' "$JWT_PRIVATE_KEY_PEM" > secrets/jwt.key
+          printf '%s' "$JWT_PUBLIC_KEY_PEM" > secrets/jwt.pub
+
+          echo "JWT_PRIVATE_KEY_FILE=$GITHUB_WORKSPACE/secrets/jwt.key" >> "$GITHUB_ENV"
+          echo "JWT_PUBLIC_KEY_FILE=$GITHUB_WORKSPACE/secrets/jwt.pub" >> "$GITHUB_ENV"
+
+      # ---------------------------------------------------------
+      # 4. Verify key files without exposing secret contents
+      # ---------------------------------------------------------
+      - name: Verify JWT key files
+        shell: bash
+        run: |
+          test -s "$JWT_PRIVATE_KEY_FILE"
+          test -s "$JWT_PUBLIC_KEY_FILE"
+
+          echo "JWT private key file exists."
+          echo "JWT public key file exists."
+          echo "JWT signing key configuration is ready."
+
+      # ---------------------------------------------------------
+      # 5. Create CTF key required by Juice Shop tests
+      # ---------------------------------------------------------
+      - name: Create CI CTF key
+        shell: bash
+        run: |
+          printf '%s' "$CTF_KEY" > ctf.key
+          chmod 600 ctf.key
+
+          if [ ! -s ctf.key ]; then
+            echo "ERROR: ctf.key was not created."
+            exit 1
+          fi
+
+          echo "CTF key file is available for CI tests."
+
+      # ---------------------------------------------------------
+      # 6. Install dependencies
+      # ---------------------------------------------------------
+      - name: Install dependencies
+        run: npm install
+
+      # ---------------------------------------------------------
+      # 7. Build backend
+      # ---------------------------------------------------------
+      - name: Build backend
+        run: npm run build:server
+
+      # ---------------------------------------------------------
+      # 8. Run security regression tests
+      #
+      # Covers the vulnerabilities fixed by group members:
+      # - Login SQL injection
+      # - Product search SQL injection
+      # - Basket access control
+      # - Forged product reviews
+      # ---------------------------------------------------------
+      - name: Run IE3142 security regression tests
+        run: |
+          node \
+            --import ./test/api/helpers/test-env.mjs \
+            --import tsx \
+            --test \
+            --test-force-exit \
+            test/api/ie3142-security.test.ts
+
+      # ---------------------------------------------------------
+      # 9. Semgrep SAST
+      #
+      # Blocking security gate for the SQL injection fixes.
+      # ---------------------------------------------------------
+      - name: Semgrep SAST security scan
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            semgrep/semgrep semgrep scan \
+            --config /src/.semgrep/juice-shop.yml \
+            /src/routes/login.ts \
+            /src/routes/search.ts \
+            --error
+
+      # ---------------------------------------------------------
+      # 10. Backend dependency scan
+      #
+      # Juice Shop already contains known vulnerable dependencies.
+      # This prevents the existing baseline from becoming worse.
+      # ---------------------------------------------------------
+      - name: Backend dependency vulnerability scan
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > backend-audit.json || true
+
+          node -e "
+            const a = require('./backend-audit.json');
+            const v = a.metadata.vulnerabilities;
+
+            console.log('Backend dependency audit:', v);
+
+            if (v.high > 16 || v.critical > 7) {
+              console.error('Backend dependency vulnerability baseline exceeded.');
+              process.exit(1);
+            }
+
+            console.log('Backend dependency baseline accepted.');
+          "
+
+      # ---------------------------------------------------------
+      # 11. Frontend dependency scan
+      # ---------------------------------------------------------
+      - name: Frontend dependency vulnerability scan
+        working-directory: ./frontend
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > frontend-audit.json || true
+
+          node -e "
+            const a = require('./frontend-audit.json');
+            const v = a.metadata.vulnerabilities;
+
+            console.log('Frontend dependency audit:', v);
+
+            if (v.high > 4 || v.critical > 0) {
+              console.error('Frontend dependency vulnerability baseline exceeded.');
+              process.exit(1);
+            }
+
+            console.log('Frontend dependency baseline accepted.');
+          "
+
+      # ---------------------------------------------------------
+      # 12. Gitleaks secret scan
+      #
+      # Blocking security control for secrets committed to Git.
+      # ---------------------------------------------------------
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------------------------------------------------
+      # 13. Build Docker image
+      # ---------------------------------------------------------
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ie3142-juice-shop:${{ github.sha }} \
+            .
+
+      # ---------------------------------------------------------
+      # 14. Trivy container vulnerability scan
+      #
+      # Trivy scans the complete Juice Shop Docker image.
+      # Juice Shop intentionally contains many upstream CVEs,
+      # therefore these findings are reported but do not fail
+      # this project pipeline.
+      #
+      # The project-specific vulnerabilities are enforced by
+      # the regression tests, Semgrep and Gitleaks above.
+      # ---------------------------------------------------------
+      - name: Trivy container vulnerability scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'ie3142-juice-shop:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          scanners: 'vuln'
+
+      # ---------------------------------------------------------
+      # 15. Confirm Trivy completed
+      # ---------------------------------------------------------
+      - name: Confirm container security scan completed
+        shell: bash
+        run: |
+          echo "Trivy container vulnerability scan completed."
+          echo "Known upstream Juice Shop vulnerabilities are reported for review."
+          echo "Project-specific security controls are enforced separately."
