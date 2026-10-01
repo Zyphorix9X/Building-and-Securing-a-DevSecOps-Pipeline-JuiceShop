@@ -93,4 +93,5 @@ secrets.*
 *.sqlite
 *.sqlite3
 
-
+# Local test RSA keys
+.test-keys/
