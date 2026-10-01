@@ -51,7 +51,7 @@ export function createProductReviews () {
       res.status(201).json({
         status: 'success'
       })
-
+      
     } catch {
       res.status(500).json({
         error: 'Unable to create review'

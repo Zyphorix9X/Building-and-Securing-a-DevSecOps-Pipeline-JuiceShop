@@ -15,7 +15,7 @@ export function retrieveBasket () {
     try {
       // Get the currently authenticated user
       const user = security.authenticatedUsers.from(req)
-
+      
       // Reject request if no authenticated user or basket exists
       if (!user?.data?.id || !user.bid) {
         res.status(401).json({
