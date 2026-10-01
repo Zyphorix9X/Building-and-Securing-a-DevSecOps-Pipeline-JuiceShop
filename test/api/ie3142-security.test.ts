@@ -97,3 +97,52 @@ void describe('IE3142 - Member 1 Login SQL Injection', () => {
     )
   })
 })
+
+void describe('IE3142 - Member 4 Forged Product Review', () => {
+  void it('should reject unauthenticated product review creation', async () => {
+    const response = await request(app)
+      .put('/rest/products/1/reviews')
+      .send({
+        message: 'IE3142 unauthenticated review test',
+        author: 'forged@example.com'
+      })
+
+    assert.equal(response.status, 401)
+  })
+
+  void it('should prevent an authenticated user from forging the review author', async () => {
+    const { token } = await login(app, {
+      email: 'jim@juice-sh.op',
+      password: 'ncc-1701'
+    })
+
+    assert.ok(token)
+
+    const uniqueMessage = `IE3142 forged review test ${Date.now()}`
+
+    const createResponse = await request(app)
+      .put('/rest/products/1/reviews')
+      .set({
+        Authorization: `Bearer ${token}`,
+        'content-type': 'application/json'
+      })
+      .send({
+        message: uniqueMessage,
+        author: 'forged@example.com'
+      })
+
+    assert.equal(createResponse.status, 201)
+
+    const reviewsResponse = await request(app)
+      .get('/rest/products/1/reviews')
+
+    assert.equal(reviewsResponse.status, 200)
+
+    const createdReview = reviewsResponse.body.data.find(
+(review: { message: string }) => review.message === uniqueMessage    )
+
+    assert.ok(createdReview)
+    assert.equal(createdReview.author, 'jim@juice-sh.op')
+    assert.notEqual(createdReview.author, 'forged@example.com')
+  })
+})

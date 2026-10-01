@@ -94,15 +94,3 @@ secrets.*
 *.sqlite3
 
 
-# local secrets
-secrets/
-*.key
-*.pem
-.env
-.env.*
-!.env.example
-
-# Security evidence and temporary files
-evidence/
-*.pem
-*.key
