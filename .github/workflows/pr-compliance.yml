@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   check-compliance:
+    # This policy applies only to the official OWASP Juice Shop repository.
+    if: github.repository == 'juice-shop/juice-shop'
     runs-on: ubuntu-latest
     steps:
       - name: "Initialize PR Information"
