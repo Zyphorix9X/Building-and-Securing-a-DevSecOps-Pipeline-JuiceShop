@@ -139,7 +139,7 @@ void describe('IE3142 - Member 4 Forged Product Review', () => {
     assert.equal(reviewsResponse.status, 200)
 
     const createdReview = reviewsResponse.body.data.find(
-(review: { message: string }) => review.message === uniqueMessage    )
+      (review: { message: string }) => review.message === uniqueMessage)
 
     assert.ok(createdReview)
     assert.equal(createdReview.author, 'jim@juice-sh.op')

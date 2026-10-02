@@ -41,7 +41,7 @@ void describe('/rest/products/search', () => {
 
   void it('GET product search treats SQL injection payload as search text', async () => {
     const res = await request(app)
-      .get("/rest/products/search?q=%25%27%20OR%201%3D1%29%29%20--%20")
+      .get('/rest/products/search?q=%25%27%20OR%201%3D1%29%29%20--%20')
 
     assert.equal(res.status, 200)
     assert.ok(res.headers['content-type']?.includes('application/json'))

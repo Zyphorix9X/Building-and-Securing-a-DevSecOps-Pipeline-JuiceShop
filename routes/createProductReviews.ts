@@ -5,15 +5,14 @@
 
 import { type Request, type Response } from 'express'
 
-import * as challengeUtils from '../lib/challengeUtils'
+// import * as challengeUtils from '../lib/challengeUtils'
 import { reviewsCollection } from '../data/mongodb'
-import { challenges } from '../data/datacache'
+// import { challenges } from '../data/datacache'
 import * as security from '../lib/insecurity'
-import * as utils from '../lib/utils'
+// import * as utils from '../lib/utils'
 
 export function createProductReviews () {
   return async (req: Request, res: Response) => {
-
     const user = security.authenticatedUsers.from(req)
 
     if (!user?.data?.email) {
@@ -51,7 +50,6 @@ export function createProductReviews () {
       res.status(201).json({
         status: 'success'
       })
-      
     } catch {
       res.status(500).json({
         error: 'Unable to create review'
