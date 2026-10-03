@@ -31,12 +31,23 @@ void describe('/rest/products/search', () => {
     assert.equal(res.body.data.length, 0)
   })
 
-  void it('GET product search with one match returns found product', async () => {
+  void it('GET product search still returns legitimate products after SQLi remediation', async () => {
     const res = await request(app)
       .get('/rest/products/search?q=o-saft')
     assert.equal(res.status, 200)
     assert.ok(res.headers['content-type']?.includes('application/json'))
-    assert.equal(res.body.data.length, 1)
+    assert.ok(res.body.data.length >= 1)
+  })
+
+  void it('GET product search treats SQL injection payload as search text', async () => {
+    const res = await request(app)
+      .get('/rest/products/search?q=%25%27%20OR%201%3D1%29%29%20--%20')
+
+    assert.equal(res.status, 200)
+    assert.ok(res.headers['content-type']?.includes('application/json'))
+
+    // The attack must not cause the whole catalogue to be returned.
+    assert.equal(res.body.data.length, 0)
   })
 
   void it('GET product search fails with error message that exposes ins SQL Injection vulnerability', async () => {

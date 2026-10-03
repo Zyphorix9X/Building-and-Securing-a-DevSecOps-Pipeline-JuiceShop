@@ -1,3 +1,4 @@
+@ -1,108 +1,116 @@
 # App
 node_modules/
 *.sqlite
@@ -92,5 +93,5 @@ secrets.*
 *.sqlite
 *.sqlite3
 
-# Local testing evidence
-
+# Local test RSA keys
+.test-keys/
